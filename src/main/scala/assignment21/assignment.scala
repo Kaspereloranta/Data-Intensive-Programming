@@ -24,9 +24,9 @@ import org.apache.spark.streaming.{Seconds, StreamingContext}
 
 import org.apache.spark.ml.feature.MinMaxScaler
 import org.apache.spark.ml.feature.VectorAssembler
+import org.apache.spark.ml.feature.StringIndexer
 import org.apache.spark.ml.Pipeline
 import org.apache.spark.ml.linalg.Vector
-//import org.apache.spark.ml.functions.vector_to_array
 import org.apache.spark.ml.clustering.{KMeans, KMeansSummary}
 
 
@@ -75,6 +75,9 @@ object assignment  {
                       .schema(mySchema2)
                       .csv("data/dataK5D3.csv")
                       .cache()
+  
+  val indexer = new StringIndexer().setInputCol("LABEL").setOutputCol("mappedLABEL")
+  val dataK5D3WithLabels = indexer.fit(dataK5D2).transform(dataK5D2)
                   
   def task1(df: DataFrame, k: Int): Array[(Double, Double)] = {
     val kdf = df.select("a","b")
@@ -93,14 +96,13 @@ object assignment  {
     
     val kmeans = new KMeans().setK(k).setSeed(1L).setFeaturesCol("scaledFeatures")
     val model = kmeans.fit(scaledData)
-    val clusterVectors = model.clusterCenters
-    val clusterDoubles: Array[(Double, Double)] = new Array[(Double, Double)](k);
-       
-    for(i <- 0 to (clusterDoubles.length-1)){
-     val cluster = (clusterVectors(i)(0),clusterVectors(i)(1))
-     clusterDoubles(i) = cluster
-    }     
-    return clusterDoubles
+    val clusterPairs = model.clusterCenters.map(v => (v(0),v(1)))
+    println("\n K-means summary for 2-dim data: \n")
+    model.summary.predictions.show()
+    println("2-dim data clusters: \n")
+    clusterPairs.foreach(println)
+    println("\n")
+    return clusterPairs
   }
 
   def task2(df: DataFrame, k: Int): Array[(Double, Double, Double)] = {
@@ -120,13 +122,12 @@ object assignment  {
     
     val kmeans = new KMeans().setK(k).setSeed(1L).setFeaturesCol("scaledFeatures")
     val model = kmeans.fit(scaledData)
-    val clusterVectors = model.clusterCenters
-    val clusterTuples: Array[(Double, Double, Double)] = new Array[(Double, Double, Double)](k);
-       
-    for(i <- 0 to (clusterTuples.length-1)){
-     val cluster = (clusterVectors(i)(0),clusterVectors(i)(1),clusterVectors(i)(2))
-     clusterTuples(i) = cluster
-    }     
+    val clusterTuples = model.clusterCenters.map(v => (v(0),v(1),v(2)))
+    println("\n K-means summary for 3-dim data: \n")
+    model.summary.predictions.show()
+    println("3-dim data clusters: \n")
+    clusterTuples.foreach(println)
+    println("\n")
     return clusterTuples
   }
 
