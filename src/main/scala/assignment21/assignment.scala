@@ -9,7 +9,7 @@ import org.apache.spark.sql.Column
 import org.apache.spark.sql.Row
 import org.apache.spark.sql.DataFrame
 import org.apache.spark.sql.types.StructType
-import org.apache.spark.sql.types.{ArrayType, StringType, StructField, IntegerType}
+import org.apache.spark.sql.types.{ArrayType, StringType, StructField, IntegerType, DoubleType}
 import org.apache.spark.sql.types.DataType
 import org.apache.spark.sql.functions.col
 import org.apache.spark.sql.functions.{count, sum, min, max, asc, desc, udf, to_date, avg}
@@ -45,16 +45,36 @@ object assignment  {
   Logger.getLogger("org").setLevel(Level.OFF)
                        
   
-  val spark = ???
+  val spark = SparkSession.builder()
+                          .appName("assignment")
+                          .config("spark.driver.host", "localhost")
+                          .master("local")
+                          .getOrCreate()
                           
-  val dataK5D2 =  spark.read
-                       .???
-                       .csv("data/dataK5D2.csv")
+  val mySchema1 = StructType(Array(
+      StructField("a",DoubleType,true),
+      StructField("b",DoubleType,true),
+      StructField("LABEL",StringType,true)))
+      
+  val mySchema2 = StructType(Array(
+      StructField("a",DoubleType,true),
+      StructField("b",DoubleType,true),
+      StructField("c",DoubleType,true),
+      StructField("LABEL",StringType,true)))    
+      
+                     
+  val dataK5D2 =  spark.read.option("header","true")
+                      .option("delimiter",",")
+                      .schema(mySchema1)
+                      .csv("data/dataK5D2.csv")
+                      .cache()
 
-  val dataK5D3 =  spark.read
-                       .???
-                       .csv("data/dataK5D3.csv")
-
+  val dataK5D3 =  spark.read.option("header","true")
+                      .option("delimiter",",")
+                      .schema(mySchema2)
+                      .csv("data/dataK5D3.csv")
+                      .cache()
+                       
   def task1(df: DataFrame, k: Int): Array[(Double, Double)] = {
     ???
   }
