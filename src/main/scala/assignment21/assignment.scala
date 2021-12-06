@@ -22,10 +22,11 @@ import org.apache.spark.storage.StorageLevel
 import org.apache.spark.streaming.{Seconds, StreamingContext}
 
 
-
-
+import org.apache.spark.ml.feature.MinMaxScaler
 import org.apache.spark.ml.feature.VectorAssembler
 import org.apache.spark.ml.Pipeline
+import org.apache.spark.ml.linalg.Vector
+//import org.apache.spark.ml.functions.vector_to_array
 import org.apache.spark.ml.clustering.{KMeans, KMeansSummary}
 
 
@@ -74,13 +75,59 @@ object assignment  {
                       .schema(mySchema2)
                       .csv("data/dataK5D3.csv")
                       .cache()
-                       
+                  
   def task1(df: DataFrame, k: Int): Array[(Double, Double)] = {
-    ???
+    val kdf = df.select("a","b")
+      
+    val vectorAssembler = new VectorAssembler().setInputCols(Array("a","b"))
+                                               .setOutputCol("features")
+    val transformationPipeline = new Pipeline().setStages(Array(vectorAssembler))
+    val pipeLine = transformationPipeline.fit(kdf)
+    val transformedData = pipeLine.transform(kdf)
+        
+    val scaler = new MinMaxScaler()
+      .setInputCol("features")
+      .setOutputCol("scaledFeatures")
+    val scalerModel = scaler.fit(transformedData)
+    val scaledData = scalerModel.transform(transformedData)
+    
+    val kmeans = new KMeans().setK(k).setSeed(1L).setFeaturesCol("scaledFeatures")
+    val model = kmeans.fit(scaledData)
+    val clusterVectors = model.clusterCenters
+    val clusterDoubles: Array[(Double, Double)] = new Array[(Double, Double)](k);
+       
+    for(i <- 0 to (clusterDoubles.length-1)){
+     val cluster = (clusterVectors(i)(0),clusterVectors(i)(1))
+     clusterDoubles(i) = cluster
+    }     
+    return clusterDoubles
   }
 
   def task2(df: DataFrame, k: Int): Array[(Double, Double, Double)] = {
-    ???
+    val kdf = df.select("a","b","c")
+      
+    val vectorAssembler = new VectorAssembler().setInputCols(Array("a","b","c"))
+                                               .setOutputCol("features")
+    val transformationPipeline = new Pipeline().setStages(Array(vectorAssembler))
+    val pipeLine = transformationPipeline.fit(kdf)
+    val transformedData = pipeLine.transform(kdf)
+        
+    val scaler = new MinMaxScaler()
+      .setInputCol("features")
+      .setOutputCol("scaledFeatures")
+    val scalerModel = scaler.fit(transformedData)
+    val scaledData = scalerModel.transform(transformedData)
+    
+    val kmeans = new KMeans().setK(k).setSeed(1L).setFeaturesCol("scaledFeatures")
+    val model = kmeans.fit(scaledData)
+    val clusterVectors = model.clusterCenters
+    val clusterTuples: Array[(Double, Double, Double)] = new Array[(Double, Double, Double)](k);
+       
+    for(i <- 0 to (clusterTuples.length-1)){
+     val cluster = (clusterVectors(i)(0),clusterVectors(i)(1),clusterVectors(i)(2))
+     clusterTuples(i) = cluster
+    }     
+    return clusterTuples
   }
 
   def task3(df: DataFrame, k: Int): Array[(Double, Double)] = {

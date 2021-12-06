@@ -26,14 +26,13 @@ class DIP21TestSuite extends FunSuite with BeforeAndAfterAll {
     spark.stop()
   }
 
-
   test("Simple test 1") {
     assert(initializeAssignment21(), "Something is wrong with your assignment object")
     import assignment._
     val v = task1(dataK5D2, 5)
     assert(v.length == 5, "Did not return five means")
   }
-
+  
   test("Simple test 2") {
     assert(initializeAssignment21(), "Something is wrong with your assignment object")
     import assignment._
