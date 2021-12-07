@@ -149,22 +149,30 @@ object assignment  {
     val scaledData = scalerModel.transform(transformedData)
     val kmeans = new KMeans().setK(k).setSeed(1L).setFeaturesCol("scaledFeatures")
     val model = kmeans.fit(scaledData) 
-    
-    //val sc = spark.sparkContext
-    val clusterTuples = model.clusterCenters //.map(v => (v(0),v(1),v(2)))
-    clusterTuples.foreach(println)    
-    //val mat: RowMatrix = new RowMatrix(clusters)
+    val clusterTuples = model.clusterCenters.map(v => (v(0),v(1)))
+    clusterTuples.foreach(println)
+   
+    val cluster_ind = model.transform(scaledData)
+    cluster_ind.createOrReplaceTempView("fatalitydata")
+    val datapoints = spark.sql("""
+      SELECT SUM(mappedLABEL) as Fataliness, prediction
+      FROM fatalitydata
+      GROUP BY prediction
+      ORDER BY Fataliness DESC
+      LIMIT 2
+      """)
+      
+    datapoints.show()    
+    val a = datapoints.select("prediction").collect()
     
     val mostFatalClusters: Array[(Double,Double)] = new Array[(Double, Double)](2);
-
+    mostFatalClusters(0) = clusterTuples(a(0).getInt(0))
+    mostFatalClusters(1) = clusterTuples(a(1).getInt(0))
     
-    // ALUStAVA TOTEUTUS, TOIMII OIKEIN KOSKA DATA SUOTUISAA
-    for(i <- 0 to (clusterTuples.length-1)){
-      if(clusterTuples(i)(2) == 1.0){
-        mostFatalClusters :+ (clusterTuples(i)(0),clusterTuples(i)(1))
-      }
-    }
+    mostFatalClusters.foreach(println)
+    
     return mostFatalClusters
+    
   }
 
   // Parameter low is the lowest k and high is the highest one.
