@@ -29,7 +29,7 @@ import org.apache.spark.ml.Pipeline
 import org.apache.spark.ml.linalg.Vector
 import org.apache.spark.mllib.linalg.distributed.RowMatrix
 import org.apache.spark.ml.clustering.{KMeans, KMeansSummary}
-
+import org.apache.spark.ml.evaluation.MulticlassClassificationEvaluator
 
 import java.io.{PrintWriter, File}
 
@@ -135,6 +135,9 @@ object assignment  {
 
   def task3(df: DataFrame, k: Int): Array[(Double, Double)] = {
     
+    /// TÄNNE KOMMENTTEJA LISÄÄ 
+    
+    
     val mappedDf = df.select("a","b","mappedLABEL")
     val vectorAssembler = new VectorAssembler().setInputCols(Array("a","b","mappedLABEL"))
                                                .setOutputCol("features")
@@ -177,7 +180,33 @@ object assignment  {
 
   // Parameter low is the lowest k and high is the highest one.
   def task4(df: DataFrame, low: Int, high: Int): Array[(Int, Double)]  = {
-    ???
+    val twodimDf = df.select("a","b")
+    val kdf = df.select("a","b")
+    
+    val vectorAssembler = new VectorAssembler().setInputCols(Array("a","b"))
+                                               .setOutputCol("features")
+    val transformationPipeline = new Pipeline().setStages(Array(vectorAssembler))
+    
+    val pipeLine = transformationPipeline.fit(kdf)
+    val transformedData = pipeLine.transform(kdf)      
+    
+    val scaler = new MinMaxScaler()
+      .setInputCol("features")
+      .setOutputCol("scaledFeatures")
+      
+    val scalerModel = scaler.fit(transformedData)
+    val scaledData = scalerModel.transform(transformedData)
+    
+    val clusteringCosts: Array[(Int, Double)] = new Array[(Int, Double)](high-low+1);
+    
+    for(i <- low to high){
+      val kmeans = new KMeans().setK(i).setSeed(1L).setFeaturesCol("scaledFeatures")
+      val model = kmeans.fit(scaledData)
+      val predictions = model.transform(scaledData)
+      val cost = model.computeCost(scaledData)
+      clusteringCosts(i-low) = (i,cost)
+    }
+    return clusteringCosts
   }
      
   
