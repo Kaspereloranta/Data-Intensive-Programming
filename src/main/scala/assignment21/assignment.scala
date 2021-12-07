@@ -152,7 +152,10 @@ object assignment  {
     val scaledData = scalerModel.transform(transformedData)
     val kmeans = new KMeans().setK(k).setSeed(1L).setFeaturesCol("scaledFeatures")
     val model = kmeans.fit(scaledData) 
-    val clusterTuples = model.clusterCenters.map(v => (v(0),v(1)))
+    val clusterTuples = model.clusterCenters
+    val clusterPairs = clusterTuples.map(v => (v(0),v(1)))
+    
+    println("\n Cluster centers of data used in task 3 \n")    
     clusterTuples.foreach(println)
    
     val cluster_ind = model.transform(scaledData)
@@ -164,16 +167,15 @@ object assignment  {
       ORDER BY Fataliness DESC
       LIMIT 2
       """)
-      
-    datapoints.show()    
     val a = datapoints.select("prediction").collect()
     
     val mostFatalClusters: Array[(Double,Double)] = new Array[(Double, Double)](2);
-    mostFatalClusters(0) = clusterTuples(a(0).getInt(0))
-    mostFatalClusters(1) = clusterTuples(a(1).getInt(0))
+    mostFatalClusters(0) = clusterPairs(a(0).getInt(0))
+    mostFatalClusters(1) = clusterPairs(a(1).getInt(0))
     
+    println("\n Two most fatal clusters in task 3; \n")    
     mostFatalClusters.foreach(println)
-    
+    println("\n")
     return mostFatalClusters
     
   }
@@ -206,6 +208,9 @@ object assignment  {
       val cost = model.computeCost(scaledData)
       clusteringCosts(i-low) = (i,cost)
     }
+    println("\n (k, costs) pairs for task 4: \n")
+    clusteringCosts.foreach(println)
+    println("\n")
     return clusteringCosts
   }
      
