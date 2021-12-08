@@ -3,7 +3,7 @@
  * Kasper Eloranta, H274212, kasper.eloranta@tuni.fi
  * Tasks that have been implemented for this assignment:
  * 			- All basic tasks 1-4.
- * 			- In addition bonus taskus 1-3.
+ * 			- In addition bonus tasks 1-3 and 5.
  */
 
 package assignment21
@@ -257,7 +257,15 @@ object assignment  {
     clusteringCosts.foreach(println)
     println("\n")
     
-    val plot = Graph.fromEdgeTuples(clusteringCosts)
+    /* 
+     * BONUS TASK 5: I implemented the visualization of elbow method with Python, 
+     * since I found it too difficult to do in Scala. ( I couldn't find any library
+     * or function that would have plotted my results in a way I wanted, or at least
+     * as easily than using matplotlib in Python. The source code for Bonus task 5 
+     * can be found from the same folder as this source code file. Image of results
+     * I got can be also found there in as a png-file.
+     * 
+     */
     
     return clusteringCosts
   }
