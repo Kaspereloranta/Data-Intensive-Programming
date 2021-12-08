@@ -25,7 +25,14 @@ class DIP21TestSuite extends FunSuite with BeforeAndAfterAll {
     import assignment._
     spark.stop()
   }
-
+  test("Dirty data test") {
+    assert(initializeAssignment21(), "Something is wrong with your assignment object")
+    import assignment._
+    val v1 = dirtydatafounder2dim(dataK5D2)
+    val v2 = dirtydatafounder3dim(dataK5D3)
+    assert(v1 == false, "Dirty data!")
+    assert(v2 == false, "Dirty data!")
+  }
   test("Simple test 1") {
     assert(initializeAssignment21(), "Something is wrong with your assignment object")
     import assignment._

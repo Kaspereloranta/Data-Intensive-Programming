@@ -12,7 +12,7 @@ import org.apache.spark.sql.types.StructType
 import org.apache.spark.sql.types.{ArrayType, StringType, StructField, IntegerType, DoubleType}
 import org.apache.spark.sql.types.DataType
 import org.apache.spark.sql.functions.col
-import org.apache.spark.sql.functions.{count, sum, min, max, asc, desc, udf, to_date, avg}
+import org.apache.spark.sql.functions.{count, sum, min, max, asc, desc, udf, to_date, avg, abs}
 
 import org.apache.spark.sql.functions.explode
 import org.apache.spark.sql.functions.array
@@ -52,7 +52,21 @@ object assignment  {
                           .config("spark.driver.host", "localhost")
                           .master("local")
                           .getOrCreate()
+  
+  // Decided to keep the amount of shuffle partitions as 
+  // the default (200) because assignment pdf states 
+  // that the implementation should be written in a way
+  // that amount of data would be big although this particular
+  // dataset is not actual that big. If needed, amount of shuffle
+  // partitions can be quickly adjusted here. Also, amount of 
+  // seemed not to have a huge impact on the running time of the program
+  // (I tested it with values like 1-5,10,20,50,200,500).
+  spark.conf.set("spark.sql.shuffle.partitions","200")
                           
+  // BT's 2 & 3: Decided to define own schemas to make the program
+  // more efficient and to handle dirty data. By defining own schemas
+  // we avoid the problem of Spark infering the schema somehow wrongly 
+  // if the dataset included dirty data. 
   val mySchema1 = StructType(Array(
       StructField("a",DoubleType,true),
       StructField("b",DoubleType,true),
@@ -64,22 +78,44 @@ object assignment  {
       StructField("c",DoubleType,true),
       StructField("LABEL",StringType,true)))    
       
-                     
-  val dataK5D2 =  spark.read.option("header","true")
+  /*
+  	Bonus task 3: Let's assume that data with negative values is somehow measured wrongly 
+  	is therefore dirty data. Let's also assume that the measurement error has only caused 
+  	the negative sign of the datapoints, so therefore, the dirty data can be cleaned by  
+  	modifying the given data in a way that every data point will be replaced with its  
+  	absolute value. This is done below, first we read the original data from csv-files,
+  	and after that we utilize spark.sql to generate new dataframes with absolute data point
+  	values. 
+  */
+      
+  val dataK5D2dirty =  spark.read.option("header","true")
                       .option("delimiter",",")
                       .schema(mySchema1)
                       .csv("data/dataK5D2.csv")
                       .cache()
 
-  val dataK5D3 =  spark.read.option("header","true")
+  val dataK5D3dirty =  spark.read.option("header","true")
                       .option("delimiter",",")
                       .schema(mySchema2)
                       .csv("data/dataK5D3.csv")
                       .cache()
   
+  dataK5D2dirty.createOrReplaceTempView("dirtydata2dim")
+  dataK5D3dirty.createOrReplaceTempView("dirtydata3dim")
+  
+  val dataK5D2 = spark.sql("""
+    SELECT abs(a) as a, abs(b) as b, LABEL
+    FROM dirtydata2dim
+    """)
+    
+  val dataK5D3 = spark.sql("""
+    SELECT abs(a) as a, abs(b) as b, abs(c) as c, LABEL
+    FROM dirtydata3dim
+    """) 
+ 
   val indexer = new StringIndexer().setInputCol("LABEL").setOutputCol("mappedLABEL")
   val dataK5D3WithLabels = indexer.fit(dataK5D2).transform(dataK5D2)
-  dataK5D3WithLabels.show()
+  //dataK5D3WithLabels.show()
   
   def task1(df: DataFrame, k: Int): Array[(Double, Double)] = {
     val kdf = df.select("a","b")
@@ -182,7 +218,6 @@ object assignment  {
 
   // Parameter low is the lowest k and high is the highest one.
   def task4(df: DataFrame, low: Int, high: Int): Array[(Int, Double)]  = {
-    val twodimDf = df.select("a","b")
     val kdf = df.select("a","b")
     
     val vectorAssembler = new VectorAssembler().setInputCols(Array("a","b"))
@@ -200,20 +235,46 @@ object assignment  {
     val scaledData = scalerModel.transform(transformedData)
     
     val clusteringCosts: Array[(Int, Double)] = new Array[(Int, Double)](high-low+1);
-    
+    val kmeans = new KMeans().setK(low).setSeed(1L).setFeaturesCol("scaledFeatures")
+       
     for(i <- low to high){
-      val kmeans = new KMeans().setK(i).setSeed(1L).setFeaturesCol("scaledFeatures")
       val model = kmeans.fit(scaledData)
       val predictions = model.transform(scaledData)
       val cost = model.computeCost(scaledData)
       clusteringCosts(i-low) = (i,cost)
+      kmeans.setK(i+1)
     }
     println("\n (k, costs) pairs for task 4: \n")
     clusteringCosts.foreach(println)
     println("\n")
     return clusteringCosts
   }
-     
+  
+  def dirtydatafounder2dim(df: DataFrame): Boolean = {
+    val data = df.select("a","b")
+    val dirtydataA = data.filter("a < 0")
+    val dirtydataB = data.filter("b < 0")
+    val n = dirtydataA.count() + dirtydataB.count()    
+    if(n > 0){
+      return true
+    }
+    return false
+    
+  }
+  
+   def dirtydatafounder3dim(df: DataFrame): Boolean = {
+    val data = df.select("a","b","c")
+    val dirtydataA = data.filter("a < 0")
+    val dirtydataB = data.filter("b < 0")
+    val dirtydataC = data.filter("c < 0")
+    val n = dirtydataA.count() + dirtydataB.count() + dirtydataC.count()        
+    if(n > 0){
+      return true
+    }
+    return false
+    
+  }
+  
   
     
 }
