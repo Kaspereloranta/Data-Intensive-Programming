@@ -11,7 +11,6 @@ package assignment21
 import org.apache.spark.SparkConf
 import org.apache.spark.sql.functions.{window, column, desc, col}
 
-
 import org.apache.spark.sql.SQLContext
 import org.apache.spark.sql.Column
 import org.apache.spark.sql.Row
@@ -112,140 +111,143 @@ object assignment  {
   dataK5D2dirty.createOrReplaceTempView("dirtydata2dim")
   dataK5D3dirty.createOrReplaceTempView("dirtydata3dim")
   
+  // Dataframe for Task #1
   val dataK5D2 = spark.sql("""
     SELECT abs(a) as a, abs(b) as b, LABEL
     FROM dirtydata2dim
     """)
-    
+  
+  // Dataframe for Task #2
   val dataK5D3 = spark.sql("""
     SELECT abs(a) as a, abs(b) as b, abs(c) as c, LABEL
     FROM dirtydata3dim
     """) 
- 
+  
+  // Dataframe for Task #3
   val indexer = new StringIndexer().setInputCol("LABEL").setOutputCol("mappedLABEL")
   val dataK5D3WithLabels = indexer.fit(dataK5D2).transform(dataK5D2)
-  dataK5D3WithLabels.show()
   
   def task1(df: DataFrame, k: Int): Array[(Double, Double)] = {
-    val kdf = df.select("a","b")
-      
+    val kdf = df.select("a","b")     
     val vectorAssembler = new VectorAssembler().setInputCols(Array("a","b"))
-                                               .setOutputCol("features")
+                                               .setOutputCol("features")                                               
+    // Bonus Task #4                                           
     val transformationPipeline = new Pipeline().setStages(Array(vectorAssembler))
     val pipeLine = transformationPipeline.fit(kdf)
     val transformedData = pipeLine.transform(kdf)
-        
+    
+    // Scaling data
     val scaler = new MinMaxScaler()
       .setInputCol("features")
       .setOutputCol("scaledFeatures")
     val scalerModel = scaler.fit(transformedData)
     val scaledData = scalerModel.transform(transformedData)
     
+    // K-means model and cluster centers
     val kmeans = new KMeans().setK(k).setSeed(1L).setFeaturesCol("scaledFeatures")
     val model = kmeans.fit(scaledData)
     val clusterPairs = model.clusterCenters.map(v => (v(0),v(1)))
-    println("\n K-means summary for 2-dim data: \n")
-    model.summary.predictions.show()
-    println("2-dim data clusters: \n")
+    
+    // Results
+    println("\n Task #1: 2-dim K-means data clusters: \n")
     clusterPairs.foreach(println)
-    println("\n")
     return clusterPairs
   }
 
   def task2(df: DataFrame, k: Int): Array[(Double, Double, Double)] = {
-    val kdf = df.select("a","b","c")
-      
+    val kdf = df.select("a","b","c")      
     val vectorAssembler = new VectorAssembler().setInputCols(Array("a","b","c"))
-                                               .setOutputCol("features")
+                                               .setOutputCol("features")                                          
+    // Bonus Task #4                                           
     val transformationPipeline = new Pipeline().setStages(Array(vectorAssembler))
     val pipeLine = transformationPipeline.fit(kdf)
     val transformedData = pipeLine.transform(kdf)
-        
+    
+    // Scaling data
     val scaler = new MinMaxScaler()
       .setInputCol("features")
       .setOutputCol("scaledFeatures")
     val scalerModel = scaler.fit(transformedData)
     val scaledData = scalerModel.transform(transformedData)
-    clusteringCosts
+    
+    // K-means model and cluster centers
     val kmeans = new KMeans().setK(k).setSeed(1L).setFeaturesCol("scaledFeatures")
     val model = kmeans.fit(scaledData)
     val clusterTuples = model.clusterCenters.map(v => (v(0),v(1),v(2)))
-    println("\n K-means summary for 3-dim data: \n")
-    model.summary.predictions.show()
-    println("3-dim data clusters: \n")
+    
+    // Results
+    println("\n Task #2: 3-dim K-means data clusters: \n")
     clusterTuples.foreach(println)
-    println("\n")
     return clusterTuples
   }
 
-  def task3(df: DataFrame, k: Int): Array[(Double, Double)] = {
-    
-    /// TÄNNE KOMMENTTEJA LISÄÄ 
-    
-    
+  def task3(df: DataFrame, k: Int): Array[(Double, Double)] = {     
     val mappedDf = df.select("a","b","mappedLABEL")
     val vectorAssembler = new VectorAssembler().setInputCols(Array("a","b","mappedLABEL"))
-                                               .setOutputCol("features")
+                                               .setOutputCol("features")                                               
+    // Bonus Task #4                                           
     val transformationPipeline = new Pipeline().setStages(Array(vectorAssembler))
     val pipeLine = transformationPipeline.fit(mappedDf)
     val transformedData = pipeLine.transform(mappedDf)
-        
+    
+    // Scaling data
     val scaler = new MinMaxScaler()
       .setInputCol("features")
       .setOutputCol("scaledFeatures")
     val scalerModel = scaler.fit(transformedData)
     val scaledData = scalerModel.transform(transformedData)
+    
+    // K-means model and cluster centers
     val kmeans = new KMeans().setK(k).setSeed(1L).setFeaturesCol("scaledFeatures")
     val model = kmeans.fit(scaledData) 
     val clusterTuples = model.clusterCenters
     val clusterPairs = clusterTuples.map(v => (v(0),v(1)))
     
-    println("\n Cluster centers of data used in task 3 \n")    
+    println("\n Task #3: Cluster centers of originally 2-dim data with LABEL column mapped to numeric scale:\n")    
     clusterTuples.foreach(println)
    
+    // To find out two most fatal clusters
     val cluster_ind = model.transform(scaledData)
     cluster_ind.createOrReplaceTempView("fatalitydata")
-    val datapoints = spark.sql("""
+    val fatalClusters = spark.sql("""
       SELECT SUM(mappedLABEL) as Fataliness, prediction
       FROM fatalitydata
       GROUP BY prediction
       ORDER BY Fataliness DESC
       LIMIT 2
       """)
-    val a = datapoints.select("prediction").collect()
-    
+    val fatalIndexes = fatalClusters.select("prediction").collect()
     val mostFatalClusters: Array[(Double,Double)] = new Array[(Double, Double)](2);
-    mostFatalClusters(0) = clusterPairs(a(0).getInt(0))
-    mostFatalClusters(1) = clusterPairs(a(1).getInt(0))
+    mostFatalClusters(0) = clusterPairs(fatalIndexes(0).getInt(0))
+    mostFatalClusters(1) = clusterPairs(fatalIndexes(1).getInt(0))
     
-    println("\n Two most fatal clusters in task 3; \n")    
+    println("\nTask #3: The two most fatal clusters: \n")    
     mostFatalClusters.foreach(println)
-    println("\n")
     return mostFatalClusters
     
   }
 
   // Parameter low is the lowest k and high is the highest one.
   def task4(df: DataFrame, low: Int, high: Int): Array[(Int, Double)]  = {
-    val kdf = df.select("a","b")
-    
+    val kdf = df.select("a","b")   
     val vectorAssembler = new VectorAssembler().setInputCols(Array("a","b"))
                                                .setOutputCol("features")
-    val transformationPipeline = new Pipeline().setStages(Array(vectorAssembler))
-    
+    // Bonus Task #4
+    val transformationPipeline = new Pipeline().setStages(Array(vectorAssembler))   
     val pipeLine = transformationPipeline.fit(kdf)
     val transformedData = pipeLine.transform(kdf)      
     
+    // Scaling data
     val scaler = new MinMaxScaler()
       .setInputCol("features")
-      .setOutputCol("scaledFeatures")
-      
+      .setOutputCol("scaledFeatures")  
     val scalerModel = scaler.fit(transformedData)
     val scaledData = scalerModel.transform(transformedData)
     
+    // K-means models with different k's and calculating the costs
+    // of clustering with different k-values. 
     val clusteringCosts: Array[(Int, Double)] = new Array[(Int, Double)](high-low+1);
-    val kmeans = new KMeans().setK(low).setSeed(1L).setFeaturesCol("scaledFeatures")
-       
+    val kmeans = new KMeans().setK(low).setSeed(1L).setFeaturesCol("scaledFeatures")   
     for(i <- low to high){
       val model = kmeans.fit(scaledData)
       val predictions = model.transform(scaledData)
@@ -253,20 +255,21 @@ object assignment  {
       clusteringCosts(i-low) = (i,cost)
       kmeans.setK(i+1)
     }
-    println("\n (k, costs) pairs for task 4: \n")
-    clusteringCosts.foreach(println)
-    println("\n")
     
+    // Results in (k,costs) form where k is amount of clusters
+    // and costs is the cost of clustering with k clusters
+    println("\n Task #4: (k, costs) pairs: \n")
+    clusteringCosts.foreach(println)
+    println("\n Task #4: Check the source code file to find the graph for elbow method for Bonus Task #5. \n")
     /* 
      * BONUS TASK 5: I implemented the visualization of elbow method with Python, 
      * since I found it too difficult to do in Scala. ( I couldn't find any library
      * or function that would have plotted my results in a way I wanted, or at least
      * as easily than using matplotlib in Python. The source code for Bonus task 5 
      * can be found from the same folder as this source code file. Image of results
-     * I got can be also found there in as a png-file.
+     * I got can be also found there in as a 
      * 
      */
-    
     return clusteringCosts
   }
   
@@ -294,9 +297,18 @@ object assignment  {
     return false
     
   }
+   
+   def pipelineDemo(df: DataFrame){
+    val data = df.select("a","b","c")   
+    val vectorAssembler = new VectorAssembler().setInputCols(Array("a","b","c"))
+                                               .setOutputCol("features")
+    val transformationPipeline = new Pipeline().setStages(Array(vectorAssembler))   
+    val pipeLineModel = transformationPipeline.fit(data)
+    val transformedData = pipeLineModel.transform(data)
+    println("\n Bonus Task #4: Showing pipeline running in action: \n")   
+    transformedData.show()
+   }
   
-  
-    
 }
 
 

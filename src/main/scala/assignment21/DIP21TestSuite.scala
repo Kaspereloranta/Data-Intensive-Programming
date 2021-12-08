@@ -27,7 +27,7 @@ class DIP21TestSuite extends FunSuite with BeforeAndAfterAll {
   }
   // Tests if the data is cleaned properly. If some negative values is found, this raises
   // an error.
-  test("Dirty data test") {
+  test("\nDirty data test\n") {
     assert(initializeAssignment21(), "Something is wrong with your assignment object")
     import assignment._
     val v1 = dirtydatafounder2dim(dataK5D2)
@@ -61,5 +61,12 @@ class DIP21TestSuite extends FunSuite with BeforeAndAfterAll {
     import assignment._
     val v = task4(dataK5D2, 2, 10)
     assert(v.length == 9, "Did not return 9 measures")
+  }
+  
+  test("Pipeline test \n") {
+    assert(initializeAssignment21(), "Something is wrong with your assignment object")
+    import assignment._
+    val v = pipelineDemo(dataK5D3)
+    //assert(v.length == 9, "Did not return 9 measures")
   }
 }
