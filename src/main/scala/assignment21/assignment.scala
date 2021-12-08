@@ -29,7 +29,6 @@ import org.apache.spark.sql.SparkSession
 import org.apache.spark.storage.StorageLevel
 import org.apache.spark.streaming.{Seconds, StreamingContext}
 
-
 import org.apache.spark.ml.feature.MinMaxScaler
 import org.apache.spark.ml.feature.VectorAssembler
 import org.apache.spark.ml.feature.StringIndexer
@@ -38,6 +37,8 @@ import org.apache.spark.ml.linalg.Vector
 import org.apache.spark.mllib.linalg.distributed.RowMatrix
 import org.apache.spark.ml.clustering.{KMeans, KMeansSummary}
 import org.apache.spark.ml.evaluation.MulticlassClassificationEvaluator
+
+import org.apache.spark.graphx
 
 import java.io.{PrintWriter, File}
 
@@ -123,7 +124,7 @@ object assignment  {
  
   val indexer = new StringIndexer().setInputCol("LABEL").setOutputCol("mappedLABEL")
   val dataK5D3WithLabels = indexer.fit(dataK5D2).transform(dataK5D2)
-  //dataK5D3WithLabels.show()
+  dataK5D3WithLabels.show()
   
   def task1(df: DataFrame, k: Int): Array[(Double, Double)] = {
     val kdf = df.select("a","b")
@@ -165,7 +166,7 @@ object assignment  {
       .setOutputCol("scaledFeatures")
     val scalerModel = scaler.fit(transformedData)
     val scaledData = scalerModel.transform(transformedData)
-    
+    clusteringCosts
     val kmeans = new KMeans().setK(k).setSeed(1L).setFeaturesCol("scaledFeatures")
     val model = kmeans.fit(scaledData)
     val clusterTuples = model.clusterCenters.map(v => (v(0),v(1),v(2)))
@@ -255,6 +256,9 @@ object assignment  {
     println("\n (k, costs) pairs for task 4: \n")
     clusteringCosts.foreach(println)
     println("\n")
+    
+    val plot = Graph.fromEdgeTuples(clusteringCosts)
+    
     return clusteringCosts
   }
   
