@@ -1,3 +1,11 @@
+/* Data-Intensive Programming, fall 2021
+ * Course's programming assignment 
+ * Kasper Eloranta, H274212, kasper.eloranta@tuni.fi
+ * Tasks that have been implemented for this assignment:
+ * 			- All basic tasks 1-4.
+ * 			- In addition bonus taskus 1-3.
+ */
+
 package assignment21
 
 import org.apache.spark.SparkConf

@@ -25,6 +25,8 @@ class DIP21TestSuite extends FunSuite with BeforeAndAfterAll {
     import assignment._
     spark.stop()
   }
+  // Tests if the data is cleaned properly. If some negative values is found, this raises
+  // an error.
   test("Dirty data test") {
     assert(initializeAssignment21(), "Something is wrong with your assignment object")
     import assignment._
