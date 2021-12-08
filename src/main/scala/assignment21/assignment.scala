@@ -85,7 +85,7 @@ object assignment  {
   	modifying the given data in a way that every data point will be replaced with its  
   	absolute value. This is done below, first we read the original data from csv-files,
   	and after that we utilize spark.sql to generate new dataframes with absolute data point
-  	values. 
+  	values. The data's cleanity will be tested with Dirty data set. (check DIP21TestSuite.scala)
   */
       
   val dataK5D2dirty =  spark.read.option("header","true")
