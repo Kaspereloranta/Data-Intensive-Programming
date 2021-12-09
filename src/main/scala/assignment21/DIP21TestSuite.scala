@@ -67,6 +67,5 @@ class DIP21TestSuite extends FunSuite with BeforeAndAfterAll {
     assert(initializeAssignment21(), "Something is wrong with your assignment object")
     import assignment._
     val v = pipelineDemo(dataK5D3)
-    //assert(v.length == 9, "Did not return 9 measures")
   }
 }

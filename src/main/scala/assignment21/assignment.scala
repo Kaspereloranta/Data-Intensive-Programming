@@ -312,12 +312,13 @@ object assignment  {
      * or function that would have plotted my results in a way I wanted, or at least
      * as easily than using matplotlib in Python. The source code for Bonus task 5 
      * can be found from the same folder as this source code file. Image of results
-     * I got can be also found there in as a 
+     * I got can be also found there in as a .png.file
      * 
      */
     return clusteringCosts
   }
   
+  // Function used in dirty data test, tests wether all values in 2-dim data columns are cleaned.
   def dirtydatafounder2dim(df: DataFrame): Boolean = {
     val data = df.select("a","b")
     val dirtydataA = data.filter("a < 0")
@@ -329,6 +330,7 @@ object assignment  {
     return false
   }
   
+   // Function used in dirty data test, tests wether all values in 3-dim data columns are cleaned.
    def dirtydatafounder3dim(df: DataFrame): Boolean = {
     val data = df.select("a","b","c")
     val dirtydataA = data.filter("a < 0")
@@ -341,6 +343,7 @@ object assignment  {
     return false    
   }
    
+   // Function for Bonus Task #4 to show the pipeline running in action
    def pipelineDemo(df: DataFrame){
     val data = df.select("a","b","c")   
     val vectorAssembler = new VectorAssembler().setInputCols(Array("a","b","c"))
