@@ -116,13 +116,13 @@ object assignment  {
     SELECT abs(a) as a, abs(b) as b, LABEL
     FROM dirtydata2dim
     """)
-  
+        
   // Dataframe for Task #2
   val dataK5D3 = spark.sql("""
     SELECT abs(a) as a, abs(b) as b, abs(c) as c, LABEL
     FROM dirtydata3dim
     """) 
-  
+ 
   // Dataframe for Task #3
   val indexer = new StringIndexer().setInputCol("LABEL").setOutputCol("mappedLABEL")
   val dataK5D3WithLabels = indexer.fit(dataK5D2).transform(dataK5D2)
@@ -136,6 +136,15 @@ object assignment  {
     val pipeLine = transformationPipeline.fit(kdf)
     val transformedData = pipeLine.transform(kdf)
     
+    // For Bonus Task #6 to save original lengths of dimensions
+    // to scale cluster centers later back to original scale.
+    df.createOrReplaceTempView("cleanData2dim") 
+    val maxmin2dim = spark.sql("""
+    select max(a)-min(a) as alength, max(b)-min(b) as blength
+    FROM cleanData2dim
+    """)
+    val maxmindim2lengths = maxmin2dim.select("alength","blength")
+                            .collect.map(v=>(v(0).toString.toDouble,v(1).toString.toDouble))
     // Scaling data
     val scaler = new MinMaxScaler()
       .setInputCol("features")
@@ -151,7 +160,12 @@ object assignment  {
     // Results
     println("\n Task #1: 2-dim K-means data clusters: \n")
     clusterPairs.foreach(println)
-    return clusterPairs
+    val unscaledClusters = clusterPairs.map( v => (v._1*maxmindim2lengths(0)._1 ,
+                                                   v._2*maxmindim2lengths(0)._2))
+    println("\n Task #1: 2-dim K-means data clusters scaled back to original size: \n")                                               
+    unscaledClusters.foreach(println)
+    println("\n")
+    return unscaledClusters
   }
 
   def task2(df: DataFrame, k: Int): Array[(Double, Double, Double)] = {
@@ -163,6 +177,16 @@ object assignment  {
     val pipeLine = transformationPipeline.fit(kdf)
     val transformedData = pipeLine.transform(kdf)
     
+    // For Bonus Task #6 to save original lengths of dimensions
+    // to scale cluster centers later back to original scale.
+    df.createOrReplaceTempView("cleanData3dim") 
+    val maxmin3dim = spark.sql("""
+    select max(a)-min(a) as alength, max(b)-min(b) as blength, max(c)-min(c) as clength
+    FROM cleanData3dim
+    """)
+    val maxmindim3lengths = maxmin3dim.select("alength","blength","clength")
+                            .collect.map(v=>(v(0).toString.toDouble,v(1).toString.toDouble,
+                                             v(2).toString.toDouble))    
     // Scaling data
     val scaler = new MinMaxScaler()
       .setInputCol("features")
@@ -178,7 +202,13 @@ object assignment  {
     // Results
     println("\n Task #2: 3-dim K-means data clusters: \n")
     clusterTuples.foreach(println)
-    return clusterTuples
+    val unscaledClusters = clusterTuples.map( v => (v._1*maxmindim3lengths(0)._1,
+                                                   v._2*maxmindim3lengths(0)._2,
+                                                   v._3*maxmindim3lengths(0)._3))
+    println("\n Task #2: 3-dim K-means data clusters scaled back to original size: \n")                                               
+    unscaledClusters.foreach(println)
+    println("\n")
+    return unscaledClusters
   }
 
   def task3(df: DataFrame, k: Int): Array[(Double, Double)] = {     
@@ -190,6 +220,15 @@ object assignment  {
     val pipeLine = transformationPipeline.fit(mappedDf)
     val transformedData = pipeLine.transform(mappedDf)
     
+    // For Bonus Task #6 to save original lengths of dimensions
+    // to scale cluster centers later back to original scale.
+    mappedDf.createOrReplaceTempView("cleanData2dim") 
+    val maxmin2dim = spark.sql("""
+    select max(a)-min(a) as alength, max(b)-min(b) as blength
+    FROM cleanData2dim
+    """)
+    val maxmindim2lengths = maxmin2dim.select("alength","blength")
+                            .collect.map(v=>(v(0).toString.toDouble,v(1).toString.toDouble))  
     // Scaling data
     val scaler = new MinMaxScaler()
       .setInputCol("features")
@@ -223,8 +262,13 @@ object assignment  {
     
     println("\nTask #3: The two most fatal clusters: \n")    
     mostFatalClusters.foreach(println)
-    return mostFatalClusters
     
+    val unscaledMostFatalClusters = mostFatalClusters.map( v => (v._1*maxmindim2lengths(0)._1 ,
+                                                   v._2*maxmindim2lengths(0)._2))
+    println("\n Task #3: The two most fatal clusters scaled back to original size: \n")                                               
+    unscaledMostFatalClusters.foreach(println)
+    println("\n")
+    return unscaledMostFatalClusters   
   }
 
   // Parameter low is the lowest k and high is the highest one.
