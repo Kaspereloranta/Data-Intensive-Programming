@@ -3,7 +3,7 @@
  * Kasper Eloranta, H274212, kasper.eloranta@tuni.fi
  * Tasks that have been implemented for this assignment:
  * 			- All basic tasks 1-4.
- * 			- In addition bonus tasks 1-3 and 5.
+ * 			- All bonus tasks 1-6.
  */
 
 package assignment21
@@ -160,6 +160,7 @@ object assignment  {
     // Results
     println("\n Task #1: 2-dim K-means data clusters: \n")
     clusterPairs.foreach(println)
+    // Scale cluster centers back to original scale.
     val unscaledClusters = clusterPairs.map( v => (v._1*maxmindim2lengths(0)._1 ,
                                                    v._2*maxmindim2lengths(0)._2))
     println("\n Task #1: 2-dim K-means data clusters scaled back to original size: \n")                                               
@@ -202,6 +203,7 @@ object assignment  {
     // Results
     println("\n Task #2: 3-dim K-means data clusters: \n")
     clusterTuples.foreach(println)
+    // Scale cluster centers back to original scale.
     val unscaledClusters = clusterTuples.map( v => (v._1*maxmindim3lengths(0)._1,
                                                    v._2*maxmindim3lengths(0)._2,
                                                    v._3*maxmindim3lengths(0)._3))
@@ -245,7 +247,7 @@ object assignment  {
     println("\n Task #3: Cluster centers of originally 2-dim data with LABEL column mapped to numeric scale:\n")    
     clusterTuples.foreach(println)
    
-    // To find out two most fatal clusters
+    // To find out the two most fatal clusters
     val cluster_ind = model.transform(scaledData)
     cluster_ind.createOrReplaceTempView("fatalitydata")
     val fatalClusters = spark.sql("""
@@ -262,7 +264,7 @@ object assignment  {
     
     println("\nTask #3: The two most fatal clusters: \n")    
     mostFatalClusters.foreach(println)
-    
+    // Scale two most fatal cluster centers back to original scale.
     val unscaledMostFatalClusters = mostFatalClusters.map( v => (v._1*maxmindim2lengths(0)._1 ,
                                                    v._2*maxmindim2lengths(0)._2))
     println("\n Task #3: The two most fatal clusters scaled back to original size: \n")                                               
@@ -299,7 +301,6 @@ object assignment  {
       clusteringCosts(i-low) = (i,cost)
       kmeans.setK(i+1)
     }
-    
     // Results in (k,costs) form where k is amount of clusters
     // and costs is the cost of clustering with k clusters
     println("\n Task #4: (k, costs) pairs: \n")
@@ -326,7 +327,6 @@ object assignment  {
       return true
     }
     return false
-    
   }
   
    def dirtydatafounder3dim(df: DataFrame): Boolean = {
@@ -338,8 +338,7 @@ object assignment  {
     if(n > 0){
       return true
     }
-    return false
-    
+    return false    
   }
    
    def pipelineDemo(df: DataFrame){
@@ -352,7 +351,6 @@ object assignment  {
     println("\n Bonus Task #4: Showing pipeline running in action: \n")   
     transformedData.show()
    }
-  
 }
 
 
